@@ -1,0 +1,5 @@
+KMeans_Cluster,Customers,Avg_Recency,Avg_Frequency,Avg_Monetary,Avg_AOV,Revenue,Cluster_Name
+4,3226,42,4.6,1846,388,5953899,At Risk Customers
+3,24,7,61.7,51881,1320,1245148,New Customers
+2,6,57,63.8,187270,29088,1123621,Growth Customers
+1,1082,247,1.6,522,326,564541,Premium Loyalists

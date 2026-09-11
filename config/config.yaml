@@ -1,0 +1,287 @@
+project:
+  name: RFM Customer Segmentation
+  currency_code: GBP
+  currency_symbol: "£"
+  dataset_name: UCI Online Retail
+  retailer: UK online giftware retailer
+
+paths:
+  raw_xlsx: data/raw/Online Retail.xlsx
+  interim_raw_parquet: data/interim/transactions_raw.parquet
+  interim_staged_parquet: data/interim/transactions_staged.parquet
+  processed_dir: data/processed
+  outputs_dir: outputs
+  tables_dir: outputs/tables
+  figures_dir: outputs/figures
+  metrics_json: outputs/metrics.json
+  v1_parity_report: outputs/v1_parity_report.md
+  data_quality_report: outputs/data_quality_report.md
+  reference_dir: reference
+  sql_dir: sql
+  powerbi_model_dir: powerbi/model
+  resume_workbook: outputs/RFM_Customer_Segmentation_Workbook.xlsx
+  html_dashboard: outputs/RFM_Executive_Dashboard.html
+  v1_customer_table: reference/rfm_customer_table.csv
+  v1_segment_summary: reference/segment_summary.csv
+  v1_cluster_profile: reference/cluster_profile.csv
+
+seeds:
+  global: 42
+  kmeans: 42
+  stability:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+
+read_excel:
+  invoice_no_as_string: true
+  stock_code_as_string: true
+  customer_id_nullable_int: true
+
+cleaning:
+  non_product_stock_codes:
+    - POST
+    - DOT
+    - M
+    - C2
+    - D
+    - S
+    - BANK CHARGES
+    - AMAZONFEE
+    - CRUK
+    - B
+  gift_voucher_pattern: "^gift_0001"
+  product_stockcode_pattern: "^\\d{5}[A-Za-z]{0,2}$"
+  partial_month_day_coverage: 0.90
+  invoice_cancel_prefix: "C"
+
+v1:
+  ntile_bins: 5
+  n_customers_expected: 4338
+  n_invoices_expected: 18532
+  revenue_expected: 8887209.0
+  revenue_tolerance: 1.0
+  aov_expected: 479.56
+  aov_tolerance: 0.01
+  repeat_rate_pct_expected: 65.6
+  repeat_rate_tolerance_pp: 0.1
+  segment_count_tolerance: 2
+  segment_match_min: 0.999
+  rows_after_dedupe: 536641
+  rows_after_customer_id: 401604
+  rows_after_cancellations: 392732
+  rows_final: 392692
+
+scoring:
+  n_quintiles: 5
+  frequency_bands:
+    - {max_frequency: 1, score: 1}
+    - {max_frequency: 2, score: 2}
+    - {max_frequency: 4, score: 3}
+    - {max_frequency: 9, score: 4}
+    - {max_frequency: null, score: 5}
+
+segments:
+  - name: Champions
+    description: Bought recently, often, and spend the most. The core of historical revenue.
+    action: Protect with a loyalty programme, early access, and a dedicated account owner for wholesale accounts.
+    primary_kpi: Repeat purchase rate and revenue retention
+    sort_order: 1
+    colour: "#1B4F72"
+    conditions:
+      - {field: r_score, op: ge, value: 4}
+      - {field: f_score, op: ge, value: 4}
+      - {field: m_score, op: ge, value: 4}
+  - name: Loyal Customers
+    description: Regular buyers who are still reasonably recent, even if they are not the very top spenders.
+    action: Cross-sell adjacent gift lines and invite to a subscription / standing-order trial.
+    primary_kpi: Orders per customer
+    sort_order: 2
+    colour: "#1E8449"
+    conditions:
+      - {field: r_score, op: ge, value: 3}
+      - {field: f_score, op: ge, value: 3}
+  - name: New Customers
+    description: Acquired in the last 60 days with one or two orders. Still forming a habit.
+    action: Onboarding series within 14 days of first order; second-order incentive.
+    primary_kpi: Second-order conversion within 60 days
+    sort_order: 3
+    colour: "#148F77"
+    conditions:
+      - {field: tenure_days, op: le, value: 60}
+      - {field: f_score, op: le, value: 2}
+  - name: Potential Loyalists
+    description: Recent, still infrequent, but already spending above average.
+    action: Frequency-building offers (bundle, free delivery threshold) rather than deep discounting.
+    primary_kpi: 90-day order count
+    sort_order: 4
+    colour: "#27AE60"
+    conditions:
+      - {field: r_score, op: ge, value: 3}
+      - {field: f_score, op: le, value: 2}
+      - {field: m_score, op: ge, value: 3}
+  - name: Needs Attention
+    description: Recent but low frequency and modest spend. Easy to lose if ignored.
+    action: Low-cost reminder and category recommendations; do not over-invest.
+    primary_kpi: 60-day reactivation
+    sort_order: 5
+    colour: "#F4D03F"
+    conditions:
+      - {field: r_score, op: ge, value: 3}
+      - {field: f_score, op: le, value: 2}
+  - name: Can't Lose Them
+    description: Historically high frequency and spend, but they have gone quiet.
+    action: Personal win-back from an account manager within 7 days; ask what changed.
+    primary_kpi: 60-day reactivation of high-value accounts
+    sort_order: 6
+    colour: "#E67E22"
+    conditions:
+      - {field: r_score, op: le, value: 2}
+      - {field: f_score, op: ge, value: 4}
+      - {field: m_score, op: ge, value: 4}
+  - name: At-Risk Customers
+    description: Used to order fairly often, now slipping away. The main win-back pool.
+    action: Test a win-back campaign (email/SMS) with a holdout; see experiment design.
+    primary_kpi: 60-day reactivation rate vs holdout
+    sort_order: 7
+    colour: "#CA6F1E"
+    conditions:
+      - {field: r_score, op: le, value: 2}
+      - {field: f_score, op: ge, value: 3}
+  - name: Lapsed High Spenders
+    description: Few orders but high historical value, and not seen recently.
+    action: High-touch outreach; a generic coupon is likely to waste margin.
+    primary_kpi: Reactivation of high-AOV accounts
+    sort_order: 8
+    colour: "#CB4335"
+    conditions:
+      - {field: r_score, op: le, value: 2}
+      - {field: f_score, op: le, value: 2}
+      - {field: m_score, op: ge, value: 4}
+  - name: Hibernating
+    description: Last seen a while ago, low frequency. Cheap to ignore, expensive to over-target.
+    action: Light lifecycle email only; suppress from paid acquisition lookalikes.
+    primary_kpi: Cost per reactivation
+    sort_order: 9
+    colour: "#7D3C98"
+    conditions:
+      - {field: r_score, op: eq, value: 2}
+      - {field: f_score, op: le, value: 2}
+  - name: Lost Customers
+    description: Long-silent, low-frequency buyers. Treat as churned for planning.
+    action: Exclude from paid win-back; keep on a rare win-back burst only.
+    primary_kpi: Do-not-contact rate / wasted send cost
+    sort_order: 10
+    colour: "#5D6D7E"
+    conditions:
+      - {field: r_score, op: eq, value: 1}
+      - {field: f_score, op: le, value: 2}
+
+clustering:
+  features:
+    - recency_days
+    - frequency
+    - monetary
+  optional_aov_feature: avg_order_value
+  use_avg_order_value: false
+  log1p: true
+  k_min: 2
+  k_max: 8
+  candidate_k_min: 3
+  candidate_k_max: 6
+  min_cluster_share: 0.05
+  min_stability_ari: 0.80
+  n_init: 25
+  max_iter: 300
+  silhouette_tie_delta: 0.02
+  sensitivity_top_pct: 0.005
+  forbidden_name_tokens_for_highest_recency:
+    - Active
+    - Loyal
+    - Champion
+    - Premium
+    - New
+    - Growth
+    - Engaged
+  naming_rules:
+    - name: High-Value Active
+      conditions:
+        - {field: r_score_median, op: ge, value: 4}
+        - {field: f_score_median, op: ge, value: 4}
+        - {field: m_score_median, op: ge, value: 4}
+    - name: Engaged Regulars
+      conditions:
+        - {field: r_score_median, op: ge, value: 3}
+        - {field: f_score_median, op: ge, value: 3}
+    - name: Recent Low-Frequency
+      conditions:
+        - {field: r_score_median, op: ge, value: 4}
+        - {field: f_score_median, op: le, value: 2}
+    - name: Lapsing Valuable
+      conditions:
+        - {field: r_score_median, op: le, value: 2}
+        - any:
+            - {field: f_score_median, op: ge, value: 3}
+            - {field: m_score_median, op: ge, value: 4}
+    - name: Dormant Low-Value
+      conditions:
+        - {field: r_score_median, op: le, value: 2}
+    - name: Mid-Value Occasional
+      conditions: []
+
+migration:
+  snapshot_a: "2011-06-10"
+  not_yet_acquired_label: "Not yet acquired"
+  champion_segment: Champions
+  at_risk_segment: At-Risk Customers
+  reactivated_segments:
+    - Champions
+    - Loyal Customers
+    - Potential Loyalists
+    - Needs Attention
+    - New Customers
+
+winback:
+  at_risk_segment_names:
+    - At-Risk Customers
+    - Can't Lose Them
+  reactivation_rates:
+    - 0.05
+    - 0.10
+    - 0.20
+  expected_orders_per_reactivated: 2.0
+  label: "Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation"
+
+experiment:
+  target_segment: At-Risk Customers
+  treatment_share: 0.80
+  control_share: 0.20
+  baseline_reactivation_rate: 0.10
+  alpha: 0.05
+  power: 0.80
+  target_lift_pp: 0.05
+  window_days: 60
+  alternative: larger
+
+pareto:
+  top_shares:
+    - 0.01
+    - 0.10
+    - 0.20
+
+viz:
+  dpi: 200
+  figsize: [10, 6]
+  style: seaborn-v0_8-whitegrid
+  font_size: 11
+  title_size: 13
+
+app:
+  processed_relative: data/processed

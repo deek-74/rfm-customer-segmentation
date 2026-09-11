@@ -1,0 +1,12 @@
+pandas==2.2.3
+numpy==2.2.4
+duckdb==1.2.2
+scikit-learn==1.6.1
+scipy==1.15.2
+statsmodels==0.14.4
+matplotlib==3.10.1
+plotly==6.0.1
+PyYAML==6.0.2
+openpyxl==3.1.5
+XlsxWriter==3.2.2
+pyarrow==19.0.1

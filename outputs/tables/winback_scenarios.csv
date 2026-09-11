@@ -1,0 +1,7 @@
+segment,customers,avg_order_value,reactivation_rate,expected_orders_per_reactivated,expected_winback_revenue,label
+At-Risk Customers,313,305.0151450251027,0.05,2.0,9546.974039285715,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
+At-Risk Customers,313,305.0151450251027,0.1,2.0,19093.94807857143,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
+At-Risk Customers,313,305.0151450251027,0.2,2.0,38187.89615714286,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
+Can't Lose Them,87,383.4627787058746,0.05,2.0,3336.1261747411095,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
+Can't Lose Them,87,383.4627787058746,0.1,2.0,6672.252349482219,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
+Can't Lose Them,87,383.4627787058746,0.2,2.0,13344.504698964438,Scenario (not a forecast) — historical AOV × assumed orders × assumed reactivation
