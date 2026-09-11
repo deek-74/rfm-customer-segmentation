@@ -1,36 +1,27 @@
-# RFM Customer Segmentation
+RFM Customer Segmentation
 
-Excel workbook and HTML dashboard for RFM customer segmentation on the [UCI Online Retail](https://archive.ics.uci.edu/dataset/352/online+retail) extract (UK giftware, Dec 2010 – 9 Dec 2011).
+Product analytics using the UCI Online Retail dataset (UK giftware retailer, Dec 2010–9 Dec 2011) to identify who to protect, who is slipping, and where win-back campaigns are worth pursuing. All revenue figures represent historical net revenue, not forecasts.
 
-**Final deliverables**
+Key Results
+4,324 customers · £8.25M historical net revenue · £452 AOV · 65.3% repeat purchase rate
+Champions: 18% of customers → 63% of revenue
+Top 20%: 74% of revenue (Gini 0.70)
+At-Risk + Can't Lose Them: 400 customers · £557K revenue
+82% of June Champions remained Champions in December
+December 2011 covers 1–9 Dec only and should not be interpreted as a full-month decline
 
-| File | What it is |
-|---|---|
-| `outputs/RFM_Customer_Segmentation_Workbook.xlsx` | The workbook to present |
-| `outputs/RFM_Executive_Dashboard.html` | Browser dashboard |
+Methodology
+Net cancellations using LIFO and exclude postage/manual charges from product revenue
+Calculate customer-level RFM metrics using DuckDB SQL
+Apply tie-safe R/M quintiles and fixed Frequency bands: 1 / 2 / 3–4 / 5–9 / 10+
+Assign customers to 10 covering segments using first-match-wins logic
+Apply K-means (k=3) on log1p-transformed RFM metrics, with cluster names based on median profiles
+Analyse June–December segment migration
 
-**4,324 customers · £8.25m historical net · Champions are 18% of customers and 63% of revenue**
+Tech Stack
 
-## Run
+Python · pandas · DuckDB · SQL · scikit-learn · XlsxWriter · Plotly
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
+Deliverable
 
-Save the UCI file as `data/raw/Online Retail.xlsx` (space in the name), then:
-
-```powershell
-python run.py all
-```
-
-That builds the workbook and dashboard in `outputs/`.
-
-| Command | What it does |
-|---|---|
-| `python run.py data` | Excel → parquet |
-| `python run.py pipeline` | Clean, RFM, segments, clusters |
-| `python run.py excel` | Write the workbook and HTML dashboard |
-
-The `.xlsx` is ~50 MB. Do not commit it; rebuild with `python run.py excel`.
+outputs/RFM_Customer_Segmentation_Workbook.xlsx — Excel workbook containing the executive summary, charts, RFM rules, customer-level analysis, segment summaries, and transaction-level audit sheets.
