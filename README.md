@@ -18,10 +18,6 @@ Assign customers to 10 covering segments using first-match-wins logic
 Apply K-means (k=3) on log1p-transformed RFM metrics, with cluster names based on median profiles
 Analyse June–December segment migration
 
-Tech Stack
-
-Python · pandas · DuckDB · SQL · scikit-learn · XlsxWriter · Plotly
-
 Deliverable
 
 outputs/RFM_Customer_Segmentation_Workbook.xlsx — Excel workbook containing the executive summary, charts, RFM rules, customer-level analysis, segment summaries, and transaction-level audit sheets.
